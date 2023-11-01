@@ -2,7 +2,7 @@
 #0: Make menu -> IN PROGRESS
     #Get play button working -> DONE
     #Get rules working -> DONE
-    #Get settings working -> DONE
+    #Get settings working -> IN PROGRESS
 #1: Get graphical representaiton of board -> DONE
 #2: Get sprites for the qubit states and gates -> IN PROGRESS
     #Spin 1, Spin 0, Bell state qubits; Hadamard gates, controlled not gates, bit flip gates, etc.
@@ -23,6 +23,8 @@ import os
 import csv
 import typing
 from piece import pieceSprite
+import Circuit_Builder as cb #used to simulate quantum circuit
+
 
 pg.init()                                                               #Initialize the game engine
 screen = pg.display.set_mode((800, 800))                                #Initialize the
@@ -138,33 +140,14 @@ def handleRules()  -> None:
             pg.display.update()
             clock.tick(20)
 
-def initializeBoard() -> list[int]:
-    coords = np.zeros((18,2))
-    for i in range(1,19):
-        if i <= 9:
-            coords[i-1] = [10, i*50]
-
-        else:
-            coords[i-1] = [765, (i-9)*50]
-
-    return coords
-
 #INSERT FUNCTION FOR CHECKING BOARD STATE
 
 #TODO: finish comments -> indicate the type of sound in def
-def load_image(name: str, colorkey=None, scale=1): #from pygame website
+def load_image(name: str): #modified from pygame website
     fullname = os.path.join(data_dir, name)
     image = pg.image.load(fullname)
+    image = image.convert_alpha()
 
-    size = image.get_size()
-    size = (size[0] * scale, size[1] * scale)
-    image = pg.transform.scale(image, size)
-
-    image = image.convert()
-    if colorkey is not None:
-        if colorkey == -1:
-            colorkey = image.get_at((0, 0))
-        image.set_colorkey(colorkey, pg.RLEACCEL)
     return image, image.get_rect()
 
 #TODO: finish comments -> indicate the type of sound in def
@@ -181,6 +164,78 @@ def load_sound(name: str): #from pygame website
 
     return sound
 
+def canMove(rect): #checks if desired spot is empty
+    pos = rectToMatrix(rect)
+    return (positions[pos[1]][pos[0]] == 0)
+
+def validMoves(piece):
+    moves = [] #list to store the end positions of all valid moves
+    clostestX, clostestY = 0, 0 #nearest neighbor distance in x and y directions
+    pos = rectToMatrix(piece) #converts center of rect object into matrix coords
+    
+    #Determines the nearest neighbor distance based on the position of piece
+    if(pos[0]==0 or pos[0]==6): clostestY = 3
+    elif(pos[0]==1 or pos[0]==5): clostestY = 2
+    else: clostestY = 1
+    
+    if(pos[1]==0 or pos[1]==6): clostestX = 3
+    elif(pos[1]==1 or pos[1]==5): clostestX = 2
+    else: clostestX = 1
+    
+    #these loops iterate through all relavent empty spaces and determines the closest ones to the piece
+    #Valid X moves
+    i, dist = 0, 0
+    for x in positions[pos[1]]:
+        if(x == 0 and i != pos[0]): #skips all spaces that are full, invalid, or the space of the piece
+            dist = abs(pos[0]-i) #find the distance between empty spot and piece
+            if(dist == clostestX):
+                moves.append((i, pos[1])) #store all spaces that are empty and the right distance away
+        i += 1   
+         
+    #Valid Y Moves 
+    j, dist = 0, 0
+    for y in positions:
+        if(y[pos[0]] == 0 and j != pos[1]):
+            dist = abs(pos[1]-j)
+            if(dist == clostestY):
+                moves.append((pos[0], j))
+        j += 1
+                    
+    #Convert moves to rect coords     
+    rectMoves = []   
+    for m in moves: rectMoves.append(matrixToCenter(m[0], m[1]))
+        
+#    return rectMoves   #rectangle coords
+    return moves    #matrix coords
+
+#Converts from rect coordinate system to matrix coord system
+def rectToMatrix(rect):
+    cent = rect.center
+    x, y = round((cent[0]/100)-1), round((cent[1]/100)-1)
+    return (x, y)
+
+def rectToMatrix(tup):
+    x, y = round((tup[0]/100)-1), round((tup[1]/100)-1)
+    return (x, y)
+
+#Converts matrix coords to rect coords
+def matrixToCenter(x, y):
+    centX, centY = (x+1)*100, (y+1)*100
+    return (centX, centY)
+
+def matrixToCenter(tup):
+    centX, centY = (tup[0]+1)*100, (tup[1]+1)*100
+    return (centX, centY)
+
+#TODO: Finish
+''''
+def createCircuit(numPieces, maxGates, boolGates):
+    template = np.zeros((numPieces, maxGates))
+    for i in boolGates:
+        for j in i:
+
+    return fullTemplate
+'''
 #TODO: Finish
 
 '''
@@ -224,34 +279,57 @@ menuImg = load_image("menu.png")
 background = load_image("gameBacking.png") #TODO Use somewhere
 clubLogo = load_image("QIS.png") #TODO Use somewhere; maybe at the end when the game is over
 board_surface = load_image("canvas.png")
-white_piece = load_image("WhitePiece.png")
-black_piece = load_image("BlackPiece.png")
+positions = [[0, -1, -1, 0, -1, -1, 0],
+             [-1, 0, -1, 0, -1, 0, -1], #0 = empty
+             [-1, -1, 0, 0, 0, -1, -1], #1 = white
+             [ 0, 0, 0, -1, 0,  0,  0], #2 = black
+             [-1, -1, 0, 0, 0, -1, -1], #else = invalid space
+             [-1, 0, -1, 0, -1, 0, -1], #so, to get index (x, y) pos[y][x]
+             [0, -1, -1, 0, -1, -1, 0]]
+#Might need to load these individually
+'''
 P1_0 = load_image("P1_0.png")
 P1_1 = load_image("P1_1.png")
 P2_0 = load_image("P2_0.png")
 P2_1 = load_image("P2_1.png")
+P1_sup = load_image("P1_sup.png")
+P2_sup = load_image("P2_sup.png")
+'''
 captureSound = load_sound("capture.wav")
 placementSound = load_sound("placement.mp3")
 
-pieceCoords: list[int] = initializeBoard()
 score: list[int] = [0,0]
 
 clock = pg.time.Clock()
 
 #TODO: Initialize game parameters in settings
 
-P1_sprites = pg.sprite.Group()
-P2_sprites = pg.sprite.Group()
-for i in range(9):
-    P1_sprites.add(pieceSprite(P1_1[0].convert(), P1_1[1], 30, i*75, 1))
-    P2_sprites.add(pieceSprite(P2_0[0].convert(), P2_0[1], 770, i*75, 0))
+P1_sprites = pg.sprite.Group()  # Create a sprite group for P1
+P2_sprites = pg.sprite.Group()  # Create a sprite group for P2
 
+# Create and add sprites to the sprite groups
+for i in range(1,10):
+    #P1_1[1].move(30, i*75)
+    #P1_sprite = pieceSprite(P1_1[0], P1_1[1], 30, i*75, 1)
+    P1Temp = load_image("P1_1.png")
+    P1_sprite = pieceSprite(P1Temp[0], P1Temp[1], 30, i*75, 1)
+    P1_sprites.add(P1_sprite)
+
+    #P2_0[1].move(770, i*75)
+    #P2_sprite = pieceSprite(P2_0[0], P2_0[1], 770, i*75, 0)
+    P2Temp = load_image("P2_0.png")
+    P2_sprite = pieceSprite(P2Temp[0], P2Temp[1], 770, i*75, 1)
+    P2_sprites.add(P2_sprite)
+    
+Sprite_group_initial = [P1_sprites, P2_sprites]
 
 turn = [True, False] #Determines turn order
 activateMenu = True
 menuButton[1].center = (800/2, 770)
 while True: #game loop
     if activateMenu:
+        P1_sprites = Sprite_group_initial[0]
+        P2_sprites = Sprite_group_initial[1]
         menu()
         activateMenu = False
 
@@ -265,7 +343,7 @@ while True: #game loop
                 activateMenu = True
                 break
 
-    #method for draggin sprites
+        #method for draggin sprites
         #TODO: Finish block of code which handles the turns
         if (event.type == pg.MOUSEBUTTONDOWN and turn[0]):
             pos1 = pg.mouse.get_pos()
@@ -274,13 +352,15 @@ while True: #game loop
                 if i.rect.collidepoint(pos1):
                     movePiece = True
                     while movePiece:
-                        for event in pg.event.get():
-                            i.rect.center = pg.mouse.get_pos()
-                            P1_sprites.draw(screen)
-                            if event.type == pg.MOUSEBUTTONUP:
+                        for event1 in pg.event.get():
+                            if(event1.type == pg.MOUSEBUTTONDOWN):
                                 i.rect.center = pg.mouse.get_pos()
-                                movePiece = False
-                                turn = [False, True]
+                                if(canMove(i.rect.center)):
+                                    i.rect.center = matrixToCenter(rectToMatrix(i.rect.center))
+                                    P1_sprites.draw(screen)
+                                    movePiece = False
+                                    turn = [False, True]
+                                else: print("NO")
 
 
         elif (event.type == pg.MOUSEBUTTONDOWN and turn[1]):
@@ -290,17 +370,21 @@ while True: #game loop
                 if j.rect.collidepoint(pos1):
                     movePiece = True
                     while movePiece:
-                        for event in pg.event.get():
-                            j.rect.center = pg.mouse.get_pos()
-                            P2_sprites.draw(screen)
-                            if event.type == pg.MOUSEBUTTONUP:
+                        for event1 in pg.event.get():
+                            if(event1.type == pg.MOUSEBUTTONDOWN):
                                 j.rect.center = pg.mouse.get_pos()
-                                movePiece = False
-                                turn = [True, False]
+                                if(canMove(j.rect.center)):
+                                    j.rect.center = matrixToCenter(rectToMatrix(j.rect.center))
+                                    P2_sprites.draw(screen)
+                                    movePiece = False
+                                    turn = [True, False]
+                                else: print("NO")
 
     screen.blit(board_surface[0], (0,0)) #place board on screen
     mButton = screen.blit(menuButton[0], menuButton[1])
+
     P1_sprites.draw(screen)
     P2_sprites.draw(screen)
-    pg.display.update()
+
+    pg.display.flip()
     clock.tick(20)
