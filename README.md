@@ -1,7 +1,8 @@
 # QIS_Hackathon : Quantum Nine Men Morris
 
 Write how the game is supposed to work in here, as well as how to run the application. A good software project has good documentation.
-###TODO: 
+
+### TODO
 **NOTE: Claim a task before you do it by updating the readme**
 1. Fix sprite issue; only one sprite is initialized thus only displaying one piece.
    '''
