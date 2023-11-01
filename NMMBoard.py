@@ -9,10 +9,10 @@
 #3: Encode for events for:
     #3a: moving marbles -> NEXT
     #3b: placing gates -> NEXT
-    #3c: progressing a turn and checking the board for good matches (How would the pieces be encoded on the board to allow for recognition of a win state)? -> NEXT
+    #3c: progressing a turn and checking the board for good matches (How would the pieces be encoded on the board to allow for recognition of a win state)? -> MICHAEL
     #3d: removing marbles -> NEXT
     #3e: win state -> NEXT
-    #3f: Text popups -> NEXT
+    #3f: Text popups -> DANIEL
 
 #Clerical details:
 #Add more type hints
@@ -22,6 +22,7 @@ import numpy as np
 import os
 import csv
 import typing
+from piece import pieceSprite
 
 pg.init()                                                               #Initialize the game engine
 screen = pg.display.set_mode((800, 800))                                #Initialize the
@@ -33,6 +34,36 @@ FONT = pg.font.Font(os.path.join(data_dir, "SpongeboyMeBob.ttf"), 25)   #initial
 
 #method obtained from this source: https://www.pygame.org/wiki/TextWrap
 #function which handles drawing the text for the rules.
+
+def menu():
+    while True: #menu loop
+        screen.blit(menuImg[0], (0,0))                        # These functions put the following objects on the screen at
+        play = screen.blit(playButton[0], [40, 720])          # specified coordinates.
+        rules = screen.blit(rulesButton[0], [290, 720])       #
+        settings = screen.blit(settingsButton[0], [540, 720]) #
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                pg.quit()
+                exit(0)
+
+            if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
+                pos = pg.mouse.get_pos()
+                if play.collidepoint(pos): #event for clicking "PLAY!!!" button
+                    return 0
+
+                if rules.collidepoint(pos): #event for clicking "Rules" button
+                    handleRules()
+                    break
+
+                if settings.collidepoint(pos): #event for clicking "Settings" button
+                    settingsDisplay: bool = True
+                    while settingsDisplay:
+                        pass
+                else:
+                    pass
+        pg.display.update()
+        clock.tick(20)
+
 def drawText(surface, text, color, rect, font, aa=False, bkg=None) -> None:
     y = rect.top
     lineSpacing = -2
@@ -70,7 +101,6 @@ def drawText(surface, text, color, rect, font, aa=False, bkg=None) -> None:
 
 #handles the display of the rules; text is fed through the drawText function above.
 def handleRules()  -> None:
-    rulesDisplay = True
     rules = []
     text_num = 0
     path = os.path.join(data_dir, "rules.txt")
@@ -80,7 +110,7 @@ def handleRules()  -> None:
             if i != "\n":
                 rules.append(i)
 
-    while rulesDisplay:
+    while True:
         screen.blit(background[0], (0,0))
         drawText(screen, rules[text_num], (247, 227, 176), textBox, FONT)
         if text_num != len(rules) - 1:
@@ -103,14 +133,10 @@ def handleRules()  -> None:
             elif event.type == pg.MOUSEBUTTONDOWN and event.button == 1 and text_num == len(rules)-1:
                 pos = pg.mouse.get_pos()
                 if mButton.collidepoint(pos): #Handle pressing of the menu button
-                    rulesDisplay = False
-                    break
+                    return 0
 
             pg.display.update()
             clock.tick(20)
-
-    pg.display.update()
-    clock.tick(20)
 
 def initializeBoard() -> list[int]:
     coords = np.zeros((18,2))
@@ -155,80 +181,13 @@ def load_sound(name: str): #from pygame website
 
     return sound
 
-playButton = load_image("playButton.png")
-rulesButton = load_image("rulesButton.png")
-settingsButton = load_image("settingsButton.png")
-nextButton = load_image("nextButton.png")
-menuButton = load_image("menuButton.png")
-menuImg = load_image("menu.png")
-background = load_image("gameBacking.png") #TODO Use somewhere
-clubLogo = load_image("QIS.png") #TODO Use somewhere; maybe at the end when the game is over
-board_surface = load_image("canvas.png")
-white_piece = load_image("WhitePiece.png")
-black_piece = load_image("BlackPiece.png")
-captureSound = load_sound("capture.wav")
-placementSound = load_sound("placement.mp3")
+#TODO: Finish
 
-pieceCoords: list[int] = initializeBoard()
-score: list[int] = [0,0]
-
-clock = pg.time.Clock()
-
-#TODO: Initialize game values
-#TODO: Make menu
-menu: bool = True
-while menu: #menu loop
-    screen.blit(menuImg[0], (0,0))                        # These functions put the following objects on the screen at
-    play = screen.blit(playButton[0], [50, 720])          # specified coordinates.
-    rules = screen.blit(rulesButton[0], [300, 720])       #
-    settings = screen.blit(settingsButton[0], [550, 720]) #
-    for event in pg.event.get():
-        if event.type == pg.QUIT:
-            pg.quit()
-            exit(0)
-
-        if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
-            pos = pg.mouse.get_pos()
-            if play.collidepoint(pos): #event for clicking "PLAY!!!" button
-                menu: bool = False #EXIT WHILE LOOP
-                break #EXIT FOR LOOP
-
-            if rules.collidepoint(pos): #event for clicking "Rules" button
-               handleRules()
-               break
-
-            if settings.collidepoint(pos): #event for clicking "Settings" button
-                settingsDisplay: bool = True
-                while settingsDisplay:
-                    pass
-            else:
-                pass
-    pg.display.update()
-    clock.tick(20)
-
-#TODO: Clear entities from screen
-#TODO: Increase calls for events in while loop
-while True: #game loop
-    for event in pg.event.get():
-        if event.type == pg.QUIT:
-            pg.quit()
-            exit(0)
-        #TODO: Finish block of code which handles the
-        ''''
-        if event.type == pg.MOUSEBUTTONDOWN:
-            #check for intersection with rectangles
-            if
-                pos1: tuple(int) = pg.mouse.get_pos()
-            if event.type == pg.MOUSEBUTTONUP:
-                pos2: tuple(int) = pg.mouse.get_pos()
-                #check for the intersection of the mouse with the spaces; check for illegal moves based on the initial position of the mouse when picking up the piece
-                checkBool, checkInt = checkMove(pos1, pos2) #check for the intersection of a piece sprite with an open space. If there is an illegal move, move the piece back to its original space
-                if checkBool == False:
-                    #display message to the player that the move was invalid
-        '''
-
-    screen.blit(board_surface[0], (0,0)) #place board on screen
-    #TODO: Encode events for getting piece sprites close to the following coords:
+'''
+def checkMove(pos1: tuple(int), pos2: tuple(int)) -> tuple(bool, int):
+#check for the intersection of the mouse with the spaces; check for illegal moves based on the initial position of the mouse when picking up the piece
+#check for the intersection of a piece sprite with an open space. If there is an illegal move, move the piece back to its original space
+#TODO: Encode events for getting piece sprites close to the following coords:
     #top left: (100, 100)
     #top middle: (400, 100)
     #top right: (700, 100)
@@ -253,5 +212,95 @@ while True: #game loop
     #inner bottom right: (500, 500)
     #inner bottom left: (300, 500)
     #inner bottom: (400, 500)
+    return (checkBool, checkInt)
+'''
+
+playButton = load_image("playButton.png")
+rulesButton = load_image("rulesButton.png")
+settingsButton = load_image("settingsButton.png")
+nextButton = load_image("nextButton.png")
+menuButton = load_image("menuButton.png")
+menuImg = load_image("menu.png")
+background = load_image("gameBacking.png") #TODO Use somewhere
+clubLogo = load_image("QIS.png") #TODO Use somewhere; maybe at the end when the game is over
+board_surface = load_image("canvas.png")
+white_piece = load_image("WhitePiece.png")
+black_piece = load_image("BlackPiece.png")
+P1_0 = load_image("P1_0.png")
+P1_1 = load_image("P1_1.png")
+P2_0 = load_image("P2_0.png")
+P2_1 = load_image("P2_1.png")
+captureSound = load_sound("capture.wav")
+placementSound = load_sound("placement.mp3")
+
+pieceCoords: list[int] = initializeBoard()
+score: list[int] = [0,0]
+
+clock = pg.time.Clock()
+
+#TODO: Initialize game parameters in settings
+
+P1_sprites = pg.sprite.Group()
+P2_sprites = pg.sprite.Group()
+for i in range(9):
+    P1_sprites.add(pieceSprite(P1_1[0].convert(), P1_1[1], 30, i*75, 1))
+    P2_sprites.add(pieceSprite(P2_0[0].convert(), P2_0[1], 770, i*75, 0))
+
+
+turn = [True, False] #Determines turn order
+activateMenu = True
+menuButton[1].center = (800/2, 770)
+while True: #game loop
+    if activateMenu:
+        menu()
+        activateMenu = False
+
+    for event in pg.event.get():
+        if event.type == pg.QUIT:
+            pg.quit()
+            exit(0)
+
+        if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
+            if mButton.collidepoint(pg.mouse.get_pos()):
+                activateMenu = True
+                break
+
+    #method for draggin sprites
+        #TODO: Finish block of code which handles the turns
+        if (event.type == pg.MOUSEBUTTONDOWN and turn[0]):
+            pos1 = pg.mouse.get_pos()
+
+            for i in P1_sprites.sprites():
+                if i.rect.collidepoint(pos1):
+                    movePiece = True
+                    while movePiece:
+                        for event in pg.event.get():
+                            i.rect.center = pg.mouse.get_pos()
+                            P1_sprites.draw(screen)
+                            if event.type == pg.MOUSEBUTTONUP:
+                                i.rect.center = pg.mouse.get_pos()
+                                movePiece = False
+                                turn = [False, True]
+
+
+        elif (event.type == pg.MOUSEBUTTONDOWN and turn[1]):
+            pos1 = pg.mouse.get_pos()
+
+            for j in P2_sprites.sprites():
+                if j.rect.collidepoint(pos1):
+                    movePiece = True
+                    while movePiece:
+                        for event in pg.event.get():
+                            j.rect.center = pg.mouse.get_pos()
+                            P2_sprites.draw(screen)
+                            if event.type == pg.MOUSEBUTTONUP:
+                                j.rect.center = pg.mouse.get_pos()
+                                movePiece = False
+                                turn = [True, False]
+
+    screen.blit(board_surface[0], (0,0)) #place board on screen
+    mButton = screen.blit(menuButton[0], menuButton[1])
+    P1_sprites.draw(screen)
+    P2_sprites.draw(screen)
     pg.display.update()
     clock.tick(20)
