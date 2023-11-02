@@ -14,6 +14,10 @@
     #3e: win state -> NEXT
     #3f: Text popups -> DANIEL
 
+# I am handling the mathematical representation of the board so that we know who wins and who loses.
+# I check for wins while Daniel checks 
+# I'm working with classical bits from Daniels quantum bits
+
 #Clerical details:
 #Add more type hints
 #Add more comments breaking down the code
@@ -138,7 +142,7 @@ def handleRules()  -> None:
             pg.display.update()
             clock.tick(20)
 
-def initializeBoard() -> list[int]:
+def initializeBoard():
     coords = np.zeros((18,2))
     for i in range(1,19):
         if i <= 9:
@@ -181,6 +185,80 @@ def load_sound(name: str): #from pygame website
 
     return sound
 
+playButton = load_image("playButton.png")
+rulesButton = load_image("rulesButton.png")
+settingsButton = load_image("settingsButton.png")
+nextButton = load_image("nextButton.png")
+menuButton = load_image("menuButton.png")
+menuImg = load_image("menu.png")
+background = load_image("gameBacking.png") #TODO Use somewhere
+clubLogo = load_image("QIS.png") #TODO Use somewhere; maybe at the end when the game is over
+board_surface = load_image("canvas.png")
+white_piece = load_image("WhitePiece.png")
+black_piece = load_image("BlackPiece.png")
+captureSound = load_sound("capture.wav")
+#placementSound = load_sound("placement.mp3")
+
+pieceCoords = initializeBoard()
+score = [0,0]
+
+clock = pg.time.Clock()
+
+#TODO: Initialize game values
+#TODO: Make menu
+menu: bool = True
+while menu: #menu loop
+    screen.blit(menuImg[0], (0,0))                        # These functions put the following objects on the screen at
+    play = screen.blit(playButton[0], [50, 720])          # specified coordinates.
+    rules = screen.blit(rulesButton[0], [300, 720])       #
+    settings = screen.blit(settingsButton[0], [550, 720]) #
+    for event in pg.event.get():
+        if event.type == pg.QUIT:
+            pg.quit()
+            exit(0)
+
+        if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
+            pos = pg.mouse.get_pos()
+            if play.collidepoint(pos): #event for clicking "PLAY!!!" button
+                menu: bool = False #EXIT WHILE LOOP
+                break #EXIT FOR LOOP
+
+            if rules.collidepoint(pos): #event for clicking "Rules" button
+               handleRules()
+               break
+
+            if settings.collidepoint(pos): #event for clicking "Settings" button
+                settingsDisplay: bool = True
+                while settingsDisplay:
+                    pass
+            else:
+                pass
+    pg.display.update()
+    clock.tick(20)
+
+#TODO: Clear entities from screen
+#TODO: Increase calls for events in while loop
+while True: #game loop
+    for event in pg.event.get():
+        if event.type == pg.QUIT:
+            pg.quit()
+            exit(0)
+        #TODO: Finish block of code which handles the
+        ''''
+        if event.type == pg.MOUSEBUTTONDOWN:
+            #check for intersection with rectangles
+            if
+                pos1: tuple(int) = pg.mouse.get_pos()
+            if event.type == pg.MOUSEBUTTONUP:
+                pos2: tuple(int) = pg.mouse.get_pos()
+                #check for the intersection of the mouse with the spaces; check for illegal moves based on the initial position of the mouse when picking up the piece
+                checkBool, checkInt = checkMove(pos1, pos2) #check for the intersection of a piece sprite with an open space. If there is an illegal move, move the piece back to its original space
+                if checkBool == False:
+                    #display message to the player that the move was invalid
+        '''
+
+    screen.blit(board_surface[0], (0,0)) #place board on screen
+    #TODO: Encode events for getting piece sprites close to the following coords:
 #TODO: Finish
 
 '''
