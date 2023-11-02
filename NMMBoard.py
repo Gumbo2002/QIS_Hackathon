@@ -25,17 +25,12 @@ import typing
 from piece import pieceSprite
 import Circuit_Builder as cb #used to simulate quantum circuit
 
-
 pg.init()                                                               #Initialize the game engine
 screen = pg.display.set_mode((800, 800))                                #Initialize the
 main_dir = os.path.split(os.path.abspath(__file__))[0]                  # VVV
 data_dir = os.path.join(main_dir, "data")                               # > Get data directory
 pg.display.set_caption("Quantum Nine Men Morris")                       #Set caption
 FONT = pg.font.Font(os.path.join(data_dir, "SpongeboyMeBob.ttf"), 25)   #initialize font
-
-
-#method obtained from this source: https://www.pygame.org/wiki/TextWrap
-#function which handles drawing the text for the rules.
 
 def menu():
     while True: #menu loop
@@ -66,6 +61,8 @@ def menu():
         pg.display.update()
         clock.tick(20)
 
+#method obtained from this source: https://www.pygame.org/wiki/TextWrap
+#function which handles drawing the text for the rules.
 def drawText(surface, text, color, rect, font, aa=False, bkg=None) -> None:
     y = rect.top
     lineSpacing = -2
@@ -167,11 +164,12 @@ def load_sound(name: str): #from pygame website
 def canMove(rect): #checks if desired spot is empty
     pos = rectToMatrix(rect)
     return (positions[pos[1]][pos[0]] == 0)
+    #handle the movement of pieces for the post-initial phase
 
 def validMoves(piece):
     moves = [] #list to store the end positions of all valid moves
     clostestX, clostestY = 0, 0 #nearest neighbor distance in x and y directions
-    pos = rectToMatrix(piece) #converts center of rect object into matrix coords
+    pos = rectToMatrix(piece.rect.center) #converts center of rect object into matrix coords
     
     #Determines the nearest neighbor distance based on the position of piece
     if(pos[0]==0 or pos[0]==6): clostestY = 3
@@ -226,48 +224,40 @@ def matrixToCenter(x, y):
 def matrixToCenter(tup):
     centX, centY = (tup[0]+1)*100, (tup[1]+1)*100
     return (centX, centY)
-#TODO: Finish
-''''
-def createCircuit(numPieces, maxGates, boolGates):
-    template = np.zeros((numPieces, maxGates))
-    for i in boolGates:
-        for j in i:
 
-    return fullTemplate
-'''
-#TODO: Finish
+def initalizePieces(spriteGroup1, spriteGroup2):
+    n=1
+    for i in spriteGroup1:
+        i.rect.center = (30, n*75)
+        n += 1
+        
+    m=1
+    for i in spriteGroup2:
+        i.rect.center = (770, m*75)
+        m += 1
+    return
 
-'''
-def checkMove(pos1: tuple(int), pos2: tuple(int)) -> tuple(bool, int):
-#check for the intersection of the mouse with the spaces; check for illegal moves based on the initial position of the mouse when picking up the piece
-#check for the intersection of a piece sprite with an open space. If there is an illegal move, move the piece back to its original space
-#TODO: Encode events for getting piece sprites close to the following coords:
-    #top left: (100, 100)
-    #top middle: (400, 100)
-    #top right: (700, 100)
-    #outer mid left: (100, 400)
-    #outer mid right: (700, 400)
-    #bottom left: (100, 700)
-    #bottom right: (700, 700)
-    #bottom middle: (400, 700)
-    #mid top: (400, 200)
-    #mid right: (600, 400)
-    #mid right corner: (600, 200)
-    #mid left corner: (200, 200)
-    #mid left: (200, 400)
-    #mid bottom left: (200, 600)
-    #mid bottom right: (600, 600)
-    #mid bottom: (400, 600)
-    #inner right: (500, 400)
-    #inner top right: (500, 300)
-    #inner top: (400, 300)
-    #inner top left: (300, 300)
-    #inner left: (300, 400)
-    #inner bottom right: (500, 500)
-    #inner bottom left: (300, 500)
-    #inner bottom: (400, 500)
-    return (checkBool, checkInt)
-'''
+def isInitial(spriteGroup1, spriteGroup2):
+    n=1
+    for i in spriteGroup1:
+        if(i.rect.center == (30, n*75)): return True
+        n += 1
+    
+    m=1
+    for i in spriteGroup2:
+        if(i.rect.center == (770, m*75)): return True
+        m += 1
+    
+    return False
+
+def numWins(spritegroup):
+    pos = []
+    for i in spritegroup:
+        pos.append(rectToMatrix(i.rect.center))
+        
+    for j in pos:
+        if(pos[0]==0): return
+    return
 
 playButton = load_image("playButton.png")
 rulesButton = load_image("rulesButton.png")
@@ -278,6 +268,7 @@ menuImg = load_image("menu.png")
 background = load_image("gameBacking.png") #TODO Use somewhere
 clubLogo = load_image("QIS.png") #TODO Use somewhere; maybe at the end when the game is over
 board_surface = load_image("canvas.png")
+
 positions = [[0, -1, -1, 0, -1, -1, 0],
              [-1, 0, -1, 0, -1, 0, -1], #0 = empty
              [-1, -1, 0, 0, 0, -1, -1], #1 = white
@@ -285,28 +276,21 @@ positions = [[0, -1, -1, 0, -1, -1, 0],
              [-1, -1, 0, 0, 0, -1, -1], #else = invalid space
              [-1, 0, -1, 0, -1, 0, -1], #so, to get index (x, y) pos[y][x]
              [0, -1, -1, 0, -1, -1, 0]]
-#Might need to load these individually
-'''
-P1_0 = load_image("P1_0.png")
-P1_1 = load_image("P1_1.png")
-P2_0 = load_image("P2_0.png")
-P2_1 = load_image("P2_1.png")
-P1_sup = load_image("P1_sup.png")
-P2_sup = load_image("P2_sup.png")
-'''
+
 captureSound = load_sound("capture.wav")
 placementSound = load_sound("placement.mp3")
 
-score = [0,0]
+score = [0,0] #TODO: Implement in game loop
 
 clock = pg.time.Clock()
 
 #TODO: Initialize game parameters in settings
 
 P1_sprites = pg.sprite.Group()  # Create a sprite group for P1
-P2_sprites = pg.sprite.Group()  # Create a sprite group for P2
+P2_sprites = pg.sprite.Group()   # Create a sprite group for P2
+Gate_sprites = pg.sprite.Group() #Create a sprite group for gates
 
-# Create and add sprites to the sprite groups
+# Create, add, and initialize sprites to the sprite groups
 for i in range(1,10):
     P1Temp = load_image("P1_1.png")
     P1_sprite = pieceSprite(P1Temp[0], P1Temp[1], 30, i*75, 1)
@@ -316,16 +300,24 @@ for i in range(1,10):
     P2_sprite = pieceSprite(P2Temp[0], P2Temp[1], 770, i*75, 1)
     P2_sprites.add(P2_sprite)
 
+gate_pngs = ["hadamard.png","cnot1.png","cnot2.png","bitflip.png"]
+for i,img in enumerate(gate_pngs):
+    Gatetemp = load_image(img)
+    Gatesprite = pieceSprite(Gatetemp[0], Gatetemp[1], i*50, 20, 1)
+    Gate_sprites.add(Gatesprite)
+
 turn = [True, False] #Determines turn order
 activateMenu = True
 menuButton[1].center = (800/2, 770)
 turnBox = pg.Rect(350, 0, 200, 50)
 
+testGate = []
+
 while True: #game loop
     if activateMenu:
         menu()
         activateMenu = False
-
+    gameState = isInitial(P1_sprites, P2_sprites)
     for event in pg.event.get():
         if event.type == pg.QUIT:
             pg.quit()
@@ -334,16 +326,10 @@ while True: #game loop
         if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
             if mButton.collidepoint(pg.mouse.get_pos()):
                 activateMenu = True
-                n=1
-                for i in P1_sprites:
-                    i.rect.center = (30, n*75)
-                    n += 1
-                    
-                m=1
-                for i in P2_sprites:
-                    i.rect.center = (770, m*75)
-                    m += 1
+                initalizePieces(P1_sprites, P2_sprites)
                 break
+
+        #TODO Initialize gates after all pieces were placed
 
         #method for draggin sprites
         #TODO: Finish block of code which handles the turns
@@ -351,25 +337,61 @@ while True: #game loop
             pos1 = pg.mouse.get_pos()
 
             for i in P1_sprites.sprites():
+                n=0
                 if i.rect.collidepoint(pos1):
                     movePiece = True
                     while movePiece:
                         for event1 in pg.event.get():
                             if(event1.type == pg.MOUSEBUTTONDOWN):
                                 tempCenter = pg.mouse.get_pos()
-                                if(canMove(tempCenter)):
-                                    i.rect.center = matrixToCenter(rectToMatrix(tempCenter))
-                                    P1_sprites.draw(screen)
-                                    movePiece = False
-                                    turn = [False, True]
-                                else: 
-                                    screen.blit(board_surface[0], (0,0)) #place board on screen
-                                    mButton = screen.blit(menuButton[0], menuButton[1])
-                                    drawText(screen, "Not There!", (247, 227, 176), turnBox, FONT)
-                                    P1_sprites.draw(screen)
-                                    P2_sprites.draw(screen)
-                                    pg.display.flip()
 
+                                if(gameState):
+                                    if(canMove(tempCenter)):
+                                        i.rect.center = matrixToCenter(rectToMatrix(tempCenter))
+                                        #positions[i.rect.center[0]][i.rect.center[1]] = 1
+                                        P1_sprites.draw(screen)
+                                        movePiece = False
+                                        turn = [False, True]
+
+                                    else: 
+                                        screen.blit(board_surface[0], (0,0)) #place board on screen
+                                        mButton = screen.blit(menuButton[0], menuButton[1])
+                                        drawText(screen, "Not There!", (247, 227, 176), turnBox, FONT)
+                                        P1_sprites.draw(screen)
+                                        P2_sprites.draw(screen)
+                                        pg.display.flip()
+                            #TODO: Handle turns after the initial phase
+                                else:
+                                    if(len(validMoves(i)) != 0):
+                                        i.rect.center = matrixToCenter(rectToMatrix(tempCenter))
+                                        #positions[i.rect.center[0]][i.rect.center[1]] = 1
+                                        P1_sprites.draw(screen)
+                                        movePiece = False
+                                        turn = [False, True]
+
+                                    else: 
+                                        screen.blit(board_surface[0], (0,0)) #place board on screen
+                                        mButton = screen.blit(menuButton[0], menuButton[1])
+                                        drawText(screen, "Not There!", (247, 227, 176), turnBox, FONT)
+                                        P1_sprites.draw(screen)
+                                        P2_sprites.draw(screen)
+                                        pg.display.flip()
+                                        
+                n+=1
+                
+            #TODO: Finish gate placement; need to also check if gameState variable to enter loop
+            for indexj,j in enumerate(Gate_sprites.sprites()):
+                if j.rect.collidepoint(pos1):
+                    moveGate = True
+                    while moveGate:
+                        for event1 in pg.event.get():
+                            if(event1.type == pg.MOUSEBUTTONDOWN):
+                                tempCenter = pg.mouse.get_pos()
+                                for indexi,i in enumerate(P1_sprites.sprites()):
+                                    if i.rect.collidepoint(pos1):
+                                        arr = [0,0,0,0,0,0,0,0,0]
+                                        arr[indexi] = indexj
+                                        testGate.append(arr)                                                                
 
         elif (event.type == pg.MOUSEBUTTONDOWN and turn[1]):
             pos1 = pg.mouse.get_pos()
@@ -383,6 +405,7 @@ while True: #game loop
                                 tempCenter = pg.mouse.get_pos()
                                 if(canMove(tempCenter)):
                                     j.rect.center = matrixToCenter(rectToMatrix(tempCenter))
+                                    #positions[j.rect.center[0]][j.rect.center[1]] = 2;
                                     P2_sprites.draw(screen)
                                     movePiece = False
                                     turn = [True, False]
