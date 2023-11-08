@@ -23,7 +23,6 @@ def QuantumCreate(n, gates):
     q_b = QuantumRegister(n, name='qb')
     c_b = ClassicalRegister(n)
     circuit = QuantumCircuit(q_b, c_b)
-    circuit.draw(output='mpl')
     control = -1
     target = -1
     N = 0
@@ -47,8 +46,7 @@ def QuantumCreate(n, gates):
         N += 1
         
     circuit.measure(q_b, c_b)
-    return circuit.draw(output='mpl')
-#    print(control, target)
+    print(control, target)
     
     
 testGate = [
