@@ -35,7 +35,10 @@ main_dir = os.path.split(os.path.abspath(__file__))[0]                  # VVV
 data_dir = os.path.join(main_dir, "data")                               # > Get data directory
 pg.display.set_caption("Quantum Nine Men Morris")                       #Set caption
 FONT = pg.font.Font(os.path.join(data_dir, "SpongeboyMeBob.ttf"), 25)   #initialize font
-
+locations = []
+qubit = 0
+circ = QuantumCircuit(18)
+temp = 0
 
 #method obtained from this source: https://www.pygame.org/wiki/TextWrap
 #function which handles drawing the text for the rules.
@@ -210,24 +213,34 @@ def load_sound(name: str): #from pygame website
 
 def check_win():
     #Break algorithm into rings and check 4 sides, and in separate loop check 4 cross rings
+    p1_win = 0
+    p2_win = 0
     for i in range(3):
-        triples = [0,0,0,0]
+        triple = [0,0]
+        sums = [0,0]
         for j in range(2):
-            triples[j*2] = get_state((i,2*j,0))+get_state((i,2*j,1))+get_state((i,2*j,2))
-            triples[j*2+1] = get_state((i,0,2*j))+get_state((i,1,2*j))+get_state((i,2,2*j))
-        if(3 in triples):
-            print("Player +1 wins")
-        if(-3 in triples):
-            print("Player -1 wins")
+            triple[0] = (get_state((i,2*j,0))==get_state((i,2*j,1)) and get_state((i,2*j,1))==get_state((i,2*j,2)))
+            triple[1] = (get_state((i,0,2*j))==get_state((i,1,2*j)) and get_state((i,1,2*j))==get_state((i,2,2*j)))
+            sums[0] = get_state((i,2*j,0))+get_state((i,2*j,1))+get_state((i,2*j,2))
+            sums[1] = get_state((i,0,2*j))+get_state((i,1,2*j))+get_state((i,2,2*j))
+            if(1 in triple):
+                if(sums[triple.index(1)] > 0):
+                    print("Player +1 scores")
+                else:
+                    print("Player -1 scores")
     #Cross ring check
-    triples = [0,0,0,0]
+    triple = [0,0]
+    sums = [0,0]
     for j in range(2):
-        triples[j*2] = get_state((0,1,2*j))+get_state((1,1,2*j))+get_state((2,1,2*j))
-        triples[j*2+1] = get_state((0,2*j,1))+get_state((1,2*j,1))+get_state((2,2*j,1))
-    if(3 in triples):
-        print("Player +1 wins")
-    if(-3 in triples):
-        print("Player -1 wins")
+        triple[0] = (get_state((0,1,2*j))==get_state((1,1,2*j)) and get_state((1,1,2*j))==get_state((2,1,2*j)))
+        triple[1] = (get_state((0,2*j,1))==get_state((1,2*j,1)) and get_state((1,2*j,1))==get_state((2,2*j,1)))
+        sum[0] = get_state((0,1,2*j))+get_state((1,1,2*j))+get_state((2,1,2*j))
+        sum[1] = get_state((0,2*j,1))+get_state((1,2*j,1))+get_state((2,2*j,1))
+        if(1 in triple):
+            if(sums[triple.index(1)] > 0):
+                print("Player +1 scores")
+            else:
+                print("Player -1 scores")
 
 def set_state(tup,value):
     states[tup[0],tup[1],tup[2]] = value
@@ -245,7 +258,7 @@ def state_index(pos):
         for j in range(3):
             for k in range(3):
                 loc = [400+(3-i)*(100*(j-1)),400+(3-i)*(100*(k-1))]
-                if(distance(pos,loc)<225):
+                if(distance(pos,loc)<150):
                     return (i,j,k)
     return (-1,-1,-1)
         
@@ -324,7 +337,40 @@ def measure():
                         P2_sprite = pieceSprite(P2Temp[0], P2Temp[1], p2.rect.center[0], p2.rect.center[1], 1)
                         P2_sprites.add(P2_sprite)
                         print("update",locations[i])
-    
+
+def add_gate(pos,turnNum):
+    global qubit
+    global temp
+    print(state_index(pos))
+    if(state_index(pos) not in locations):
+        print("New location")
+        tup = state_index(pos)
+        locations.append(tup)
+        if(abs(get_state(tup))==1):#Apply bit flip to +1
+            circ.x(qubit)
+            print("not",qubit)
+        if(get_state(tup)==0):#Apply H to 0 as boundary
+            circ.h(qubit)
+            print("hb",qubit)
+        if(turnNum%2==0):#Even qubits
+            circ.h(qubit)
+            print("h",qubit)
+            temp = qubit
+        else:#Odd qubits
+            circ.cx(temp,qubit)
+            print("cnot",temp,qubit)
+        qubit = qubit + 1
+    else:#Apply duplicate tup to existing qubit in location
+        for j in range(qubit):
+            if(tup==locations[j]):
+                if(turnNum%2==0):
+                    circ.h(j)
+                    print("h",j)
+                    temp = j
+                else:
+                    if(temp != j):
+                        circ.cx(temp, j)
+                        print("cnot",temp,j)
 
 def canMove(rect): #checks if desired spot is empty
     pos = rectToMatrix(rect)
@@ -491,10 +537,7 @@ points = [0, 0]
 turnNum = 0
 settings = None #initialized in game loop
 
-locations = []
-qubit = 0
-circ = QuantumCircuit(18)
-temp = 0
+
 while True: #game loop
     if activateMenu:
         settings = menu()
@@ -510,6 +553,30 @@ while True: #game loop
                 activateMenu = True
                 resetBoard(P1_sprites, P2_sprites)
                 break
+        if(turnNum == 18):
+            qubit = 0
+        
+        #Handle entanglement
+        if(event.type == pg.MOUSEBUTTONDOWN and turnNum >= 18):
+            turn = [False,False]
+            pos = pg.mouse.get_pos()
+            for p1 in P1_sprites.sprites():
+                if p1.rect.collidepoint(pos):
+                    add_gate(pos,turnNum)
+                    turnNum = turnNum + 1
+                    if(turnNum%2==0):
+                        measure()
+                    P1_sprites.draw(screen)
+                    check_win()
+            for p2 in P2_sprites.sprites():
+                if p2.rect.collidepoint(pos):
+                    add_gate(pos,turnNum)
+                    turnNum = turnNum + 1
+                    if(turnNum%2==0):
+                        measure()
+                    P2_sprites.draw(screen)
+                    check_win()
+
 
         #method for draggin sprites
         #TODO: Finish block of code which handles the turns
@@ -525,8 +592,8 @@ while True: #game loop
                                 if(turnNum < 18):
                                     #handles the initial phase; places can be placed on any unoccupied regions.
                                     tempCenter = pg.mouse.get_pos()
-                                    if(state_empty(tempCenter)):
-                                        i.rect.center = index_position(state_index(tempCenter))
+                                    if(canMove(tempCenter)):
+                                        i.rect.center = matrixToCenter(rectToMatrix(tempCenter))
                                         set_state(state_index(tempCenter),1)
                                         P1_sprites.draw(screen)
                                         check_win()
@@ -535,48 +602,6 @@ while True: #game loop
                                         turn = [False, True]
                                     else: 
                                         displayBoard(board_surface, menuButton, screen, turn, turnBox, P1_sprites, P2_sprites, False)
-                                else:
-                                    tempCenter = pg.mouse.get_pos()
-                                    if(not state_empty(tempCenter)):
-                                        print(state_index(tempCenter))
-                                        if(state_index(tempCenter) not in locations):
-                                            print("New location")
-                                            tup = state_index(tempCenter)
-                                            locations.append(tup)
-                                            if(get_state(tup)==1):#Apply bit flip to +1
-                                                circ.x(qubit)
-                                                print("not",qubit)
-                                            if(get_state(tup)==0):#Apply H to 0 as boundary
-                                                circ.h(qubit)
-                                                print("hb",qubit)
-                                            if(turnNum%2==0):#Even qubits
-                                                circ.h(qubit)
-                                                print("h",qubit)
-                                                temp = qubit
-                                            else:#Odd qubits
-                                                circ.cx(temp,qubit)
-                                                print("cnot",temp,qubit)
-                                            qubit = qubit + 1
-                                        else:#Apply duplicate tup to existing qubit in location
-                                            for j in range(qubit):
-                                                if(tup==locations[j]):
-                                                    if(turnNum%2==0):
-                                                        circ.h(j)
-                                                        print("h",qubit)
-                                                        temp = j
-                                                    else:
-                                                        circ.cx(temp, j)
-                                                        print("cnot",temp,j)
-                                        turnNum += 1
-                                        if(turnNum%2==0):
-                                            measure()
-                                            turn = [False, True]
-                                        P1_sprites.draw(screen)
-                                        check_win()
-                                        movePiece = False
-                                    else:
-                                        displayBoard(board_surface, menuButton, screen, turn, turnBox, P1_sprites, P2_sprites, False)
-
 
         elif (event.type == pg.MOUSEBUTTONDOWN and turn[1]):
             pos1 = pg.mouse.get_pos()
@@ -588,8 +613,8 @@ while True: #game loop
                             if(event1.type == pg.MOUSEBUTTONDOWN):
                                 if(turnNum < 18):
                                     tempCenter = pg.mouse.get_pos()
-                                    if(state_empty(tempCenter)):
-                                        j.rect.center = index_position(state_index(tempCenter))
+                                    if(canMove(tempCenter)):
+                                        j.rect.center = matrixToCenter(rectToMatrix(tempCenter))
                                         set_state(state_index(tempCenter),-1)
                                         P2_sprites.draw(screen)
                                         check_win()
@@ -597,47 +622,6 @@ while True: #game loop
                                         turnNum += 1
                                         turn = [True, False]
                                     else: 
-                                        displayBoard(board_surface, menuButton, screen, turn, turnBox, P1_sprites, P2_sprites, False)
-                                else: 
-                                    tempCenter = pg.mouse.get_pos()
-                                    if(not state_empty(tempCenter)):
-                                        print(state_index(tempCenter))
-                                        if(state_index(tempCenter) not in locations):
-                                            print("New location")
-                                            tup = state_index(tempCenter)
-                                            locations.append(tup)
-                                            if(get_state(tup)==1):#Apply bit flip to +1
-                                                circ.x(qubit)
-                                                print("not",qubit)
-                                            if(get_state(tup)==0):#Apply H to 0 as boundary
-                                                circ.h(qubit)
-                                                print("hb",qubit)
-                                            if(turnNum%2==0):#Even qubits
-                                                circ.h(qubit)
-                                                print("h",qubit)
-                                                temp = qubit
-                                            else:#Odd qubits
-                                                circ.cx(temp,qubit)
-                                                print("cnot",temp,qubit)
-                                            qubit = qubit + 1
-                                        else:#Apply duplicate tup to existing qubit in location
-                                            for j in range(qubit):
-                                                if(tup==locations[j]):
-                                                    if(turnNum%2==0):
-                                                        circ.h(j)
-                                                        print("h",qubit)
-                                                        temp = j
-                                                    else:
-                                                        circ.cx(temp, j)
-                                                        print("cnot",temp,j)
-                                        turnNum += 1
-                                        if(turnNum%2==0):
-                                            measure()
-                                            turn = [True, False]
-                                        P2_sprites.draw(screen)
-                                        check_win()
-                                        movePiece = False
-                                    else:
                                         displayBoard(board_surface, menuButton, screen, turn, turnBox, P1_sprites, P2_sprites, False)
 
 
