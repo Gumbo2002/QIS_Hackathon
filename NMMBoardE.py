@@ -1,19 +1,3 @@
-#Goals:
-#0: Make menu -> IN PROGRESS
-    #Get play button working -> DONE
-    #Get rules working -> DONE
-    #Get settings working -> IN PROGRESS
-#1: Get graphical representaiton of board -> DONE
-#2: Get sprites for the qubit states and gates -> IN PROGRESS
-    #Spin 1, Spin 0, Bell state qubits; Hadamard gates, controlled not gates, bit flip gates, etc. 
-#3: Encode for events for:
-    #3a: moving marbles -> NEXT
-    #3b: placing gates -> NEXT
-    #3c: progressing a turn and checking the board for good matches (How would the pieces be encoded on the board to allow for recognition of a win state)? -> MICHAEL
-    #3d: removing marbles -> NEXT
-    #3e: win state -> NEXT
-    #3f: Text popups -> DANIEL
-
 #Clerical details:
 #Add more type hints
 #Add more comments breaking down the code
@@ -27,7 +11,7 @@ import Circuit_Builder as cb #used to simulate quantum circuit
 
 from qiskit import QuantumCircuit
 from qiskit import transpile 
-from qiskit.providers.aer import AerSimulator
+from qiskit_aer import AerSimulator
 
 pg.init()                                                               #Initialize the game engine
 screen = pg.display.set_mode((800, 800))                                #Initialize the
@@ -39,8 +23,10 @@ locations = []
 qubit = 0
 circ = QuantumCircuit(18)
 temp = 0
+states = np.zeros((3, 3, 3)) 
+pastWins = []
 
-#method obtained from this source: https://www.pygame.org/wiki/TextWrap
+#method obtained from this source: https://www.pygame.org/wiki/TextWra
 #function which handles drawing the text for the rules.
 
 def menu():
@@ -149,43 +135,81 @@ def handleRules()  -> None:
             pg.display.flip()
             clock.tick(20)
 
-def handleSettings() -> dict:
+def handleSettings():
+    menuImg = load_image("menuButton.png")
     #handles the display of the settings and passes the variables to the settings variable
-    slider = load_image("WhitePiece.png")
-    sliderTrack = load_image()
+    sliderTrack1 = load_image("sliderTrack.png") #used for the slider track
+    sliderTrack2 = load_image("sliderTrack.png")
+    sliderTrack3 = load_image("sliderTrack.png")
+    display1 = pg.Rect(200, 70, 400, 30)
+    display2 = pg.Rect(200, 270, 400, 30)
+    display3 = pg.Rect(200, 470, 400, 30)
+    MAX_pointsToWin = 7
+    MAX_numPieces = 9
+    MAX_numEntangle = 8
+    MAX_params = [7, 9, 8]
+    pointsToWin = 3
+    numPieces = 9
+    numEntangle = 4
+    default = [3, 9 ,4]
+    sliders = []
+    activeSlider = None
+    for i in range(0, 3): 
+            sliders.append(pg.Rect(int((default[i]/MAX_params[i])*400)+200, 100+200*i, 25, 25))
+
     while True:
+        screen.blit(background[0], (0,0))
+        drawText(screen, "Points required for win = %d" %(MAX_pointsToWin*((sliders[0].x-200)/400)), [230, 0, 0], display1, FONT)
+        drawText(screen, "Pieces per player = %d" %(MAX_numPieces*((sliders[1].x-200)/400)), [0, 230, 0], display2, FONT)
+        drawText(screen, "Entangled pairs per player = %d" %(MAX_numEntangle*((sliders[2].x-200)/400)), [0, 0, 230], display3, FONT)
+        menuButton = screen.blit(menuImg[0], [550, 720]) #drawing the menu button
+        sliderT1 = screen.blit(sliderTrack1[0], (200, 100))
+        sliderT2 = screen.blit(sliderTrack2[0], (200, 300))
+        sliderT3 = screen.blit(sliderTrack3[0], (200, 500))
+        for slider in sliders: 
+            pg.draw.rect(screen, "purple", slider) #getting the sliders drawn
         for event in pg.event.get():
-            if(event == pg.MOUSEBUTTONDOWN and event.button == 1):
+            if(event.type == pg.MOUSEBUTTONDOWN and event.button == 1):
                 pos = pg.mouse.get_pos()
-                if sliderButton1.collidePoint(pos):
-                    for event in pg.event.get():
-                        if(event == pg.MOUSEBUTTONUP):
-                            #stop the slider at the current position and initialize the concomitant value associated for pointsToWin
-                            pointsToWin = sliderButton1.ge
-                            break
-                elif sliderButton2.collidePoint(pos):
-                    for event in pg.event.get():
-                        if(event == pg.MOUSEBUTTONUP):
-                            #stop the slider at the current position and initialize the concomitant value associated for numPieces
-                            numPieces = sliderButton2.ge
-                            break
-                elif sliderButton3.collidePoint(pos):
-                    for event in pg.event.get():
-                        if(event == pg.MOUSEBUTTONUP):
-                            #stop the slider at the current position and initialize the concomitant value associated for numEntangle
-                            numEntangle = sliderButton3.ge
-                            break
-                return {
-                    "pointsToWin" : pointsToWin,
-                    "numPieces" : numPieces,
-                    "numEntangled" : numEntangle
-                }
+                if (menuButton.collidepoint(pos)):
+                    #END OF SETTINGS MENU
+                    settings = [pointsToWin, numPieces, numEntangle]
+                    return settings
+                
                 #check for collision with rectangle representing slider bar
+                for i in range(0, len(sliders)):
+                    if (sliders[i].collidepoint(pos)):
+                        activeSlider = i
+
+            if (event.type == pg.MOUSEMOTION and activeSlider != None):
+                #animate the motion of the slider across the board
+                new_pos = pg.mouse.get_pos()[0]
+                if (new_pos < 200 or new_pos > 600): 
+                    event.rel = [0]
+
+                sliders[activeSlider].move_ip(event.rel[0], 0) #MOVES THE BOX
+                if(activeSlider == 0):
+                    drawText(screen, "Points required for win = %d" %(MAX_pointsToWin*((sliders[activeSlider].x - 200)/400)), [230, 0, 0], display1, FONT)
+                elif(activeSlider == 1):
+                    drawText(screen, "Pieces per player = %d" %(MAX_numPieces*((sliders[activeSlider].x - 200)/400)), [0, 230, 0], display2, FONT)
+                else:
+                    drawText(screen, "Entangled pairs per player = %d" %(MAX_numEntangle*((sliders[activeSlider].x - 200)/400)), [0, 0, 230], display3, FONT)
+                pg.display.flip()
+
+            if (event.type == pg.MOUSEBUTTONUP and activeSlider != None):
+                        #stop the slider at the current position and initialize the concomitant value associated for numPieces
+                        if (activeSlider == 0): 
+                            pointsToWin = int(MAX_pointsToWin*((sliders[0].x - 200)/400))
+                            print(pointsToWin)
+                        elif (activeSlider == 1): 
+                            numPieces = int(MAX_numPieces*((sliders[1].x - 200)/400)) #PROBLEM!!!!!!!
+                            print(numPieces)
+                        elif (activeSlider == 2): 
+                            numEntangle = int(MAX_numEntangle*((sliders[2].x - 200)/400))
+                            print(numEntangle)
+                        activeSlider = None
+                        break
         
-        menuButton = screen.blit(menuButton[0], [550, 720])
-        sliderButton1 = screen.blit(slider[0], [400, 100])
-        sliderButton2 = screen.blit(slider[0], [400, 300])
-        sliderButton3 = screen.blit(slider[0], [400, 500])
         pg.display.flip()
         clock.tick(20)
 
@@ -219,28 +243,41 @@ def check_win():
         triple = [0,0]
         sums = [0,0]
         for j in range(2):
-            triple[0] = (get_state((i,2*j,0))==get_state((i,2*j,1)) and get_state((i,2*j,1))==get_state((i,2*j,2)))
-            triple[1] = (get_state((i,0,2*j))==get_state((i,1,2*j)) and get_state((i,1,2*j))==get_state((i,2,2*j)))
+            triple[0] = (get_state((i,2*j,0))==get_state((i,2*j,1)) and get_state((i,2*j,0)) != 0) and (get_state((i,2*j,1))==get_state((i,2*j,2)) and get_state((i,2*j,1)) != 0)
+            triple[1] = (get_state((i,0,2*j))==get_state((i,1,2*j)) and get_state((i,0,2*j)) != 0) and (get_state((i,1,2*j))==get_state((i,2,2*j)) and get_state((i,1,2*j)) != 0)
             sums[0] = get_state((i,2*j,0))+get_state((i,2*j,1))+get_state((i,2*j,2))
             sums[1] = get_state((i,0,2*j))+get_state((i,1,2*j))+get_state((i,2,2*j))
             if(1 in triple):
-                if(sums[triple.index(1)] > 0):
-                    print("Player +1 scores")
+                ind = triple.index(1)
+                
+                    
+                if(ind == 0):
+                    if(sums[ind] > 0 & (((i,2*j,0),(i,2*j,1),(i,2*j,2)) not in pastWins)):
+                        print("Player 1 scores")
+                    else:
+                        print("Player 2 scores")
+                    pastWins.append(((i,2*j,0),(i,2*j,1),(i,2*j,2)))
                 else:
-                    print("Player -1 scores")
+                    if(sums[ind] > 0 & (((i,0,2*j),(i,1,2*j),(i,2,2*j)) not in pastWins)):
+                        print("Player 1 scores")
+                    else:
+                        print("Player 2 scores")
+                    pastWins.append(((i,0,2*j),(i,1,2*j),(i,2,2*j)))
     #Cross ring check
     triple = [0,0]
     sums = [0,0]
     for j in range(2):
-        triple[0] = (get_state((0,1,2*j))==get_state((1,1,2*j)) and get_state((1,1,2*j))==get_state((2,1,2*j)))
-        triple[1] = (get_state((0,2*j,1))==get_state((1,2*j,1)) and get_state((1,2*j,1))==get_state((2,2*j,1)))
-        sum[0] = get_state((0,1,2*j))+get_state((1,1,2*j))+get_state((2,1,2*j))
-        sum[1] = get_state((0,2*j,1))+get_state((1,2*j,1))+get_state((2,2*j,1))
+        triple[0] = (get_state((0,1,2*j))==get_state((1,1,2*j)) and get_state((0, 1,2*j)) != 0) and (get_state((1,1,2*j))==get_state((2,1,2*j)) and get_state((1,1,2*j)) != 0)
+        triple[1] = (get_state((0,2*j,1))==get_state((1,2*j,1)) and get_state((0,2*j,1)) != 0) and (get_state((1,2*j,1))==get_state((2,2*j,1)) and get_state((1,2*j,1)) != 0)
+        #sums[0] = states[0,1,2*j]+states[1,1,2*j]+states[2,1,2*j]
+        #sums[1] = states[0,2*j,1]+states[1,2*j,1]+states[2,2*j,1]        
+        sums[0] = get_state((0,1,2*j))+get_state((1,1,2*j))+get_state((2,1,2*j))
+        sums[1] = get_state((0,2*j,1))+get_state((1,2*j,1))+get_state((2,2*j,1))
         if(1 in triple):
             if(sums[triple.index(1)] > 0):
-                print("Player +1 scores")
+                print("Player 1 scores")
             else:
-                print("Player -1 scores")
+                print("Player 2 scores")
 
 def set_state(tup,value):
     states[tup[0],tup[1],tup[2]] = value
@@ -322,7 +359,7 @@ def measure():
                     if p1.rect.collidepoint(index_position(locations[i])):
                         P1_sprites.remove(p1)
                         P1Temp = load_image("P1_0.png")
-                        P1_sprite = pieceSprite(P1Temp[0], P1Temp[1], p1.rect.center[0], p1.rect.center[1], 1)
+                        P1_sprite = pieceSprite(P1Temp[0], P1Temp[1], p1.rect.center[0], p1.rect.center[1], 0)
                         P1_sprites.add(P1_sprite)
                         print("update",locations[i])
             else:
@@ -334,7 +371,7 @@ def measure():
                     if p2.rect.collidepoint(index_position(locations[i])):
                         P2_sprites.remove(p2)
                         P2Temp = load_image("P2_0.png")
-                        P2_sprite = pieceSprite(P2Temp[0], P2Temp[1], p2.rect.center[0], p2.rect.center[1], 1)
+                        P2_sprite = pieceSprite(P2Temp[0], P2Temp[1], p2.rect.center[0], p2.rect.center[1], 0)
                         P2_sprites.add(P2_sprite)
                         print("update",locations[i])
 
@@ -435,9 +472,6 @@ def matrixToCenter(tup):
     centX, centY = (tup[0]+1)*100, (tup[1]+1)*100
     return (centX, centY)
 
-def matrixToCenter(rings):
-    return
-
 #draws board between turns and uses 'goodMove' to choose which message to display at the top
 def displayBoard(board_surface, menuButton, screen, turn, turnBox, P1_sprites, P2_sprites, goodMove):
     screen.blit(board_surface[0], (0,0)) #place board on screen
@@ -464,23 +498,6 @@ def resetBoard(P1_sprites, P2_sprites):
         m += 1
     return
 
-def numMils(pos):
-    
-    return
-    
-#TODO: Finish
-''''
-def createCircuit(numPieces, maxGates, boolGates):
-    template = np.zeros((numPieces, maxGates))
-    for i in boolGates:
-        for j in i:
-
-    return fullTemplate
-'''
-#TODO: Finish
-
-
-
 playButton = load_image("playButton.png")
 rulesButton = load_image("rulesButton.png")
 settingsButton = load_image("settingsButton.png")
@@ -490,7 +507,7 @@ menuImg = load_image("menu.png")
 background = load_image("gameBacking.png") #TODO Use somewhere
 clubLogo = load_image("QIS.png") #TODO Use somewhere; maybe at the end when the game is over
 board_surface = load_image("canvas.png")
-states = np.zeros((3, 3, 3)) 
+
 positions = [[0, -1, -1, 0, -1, -1, 0],
              [-1, 0, -1, 0, -1, 0, -1], #0 = empty
              [-1, -1, 0, 0, 0, -1, -1], #1 = white
@@ -498,15 +515,7 @@ positions = [[0, -1, -1, 0, -1, -1, 0],
              [-1, -1, 0, 0, 0, -1, -1], #else = invalid space
              [-1, 0, -1, 0, -1, 0, -1], #so, to get index (x, y) pos[y][x]
              [0, -1, -1, 0, -1, -1, 0]]
-#Might need to load these individually
-'''
-P1_0 = load_image("P1_0.png")
-P1_1 = load_image("P1_1.png")
-P2_0 = load_image("P2_0.png")
-P2_1 = load_image("P2_1.png")
-P1_sup = load_image("P1_sup.png")
-P2_sup = load_image("P2_sup.png")
-'''
+
 captureSound = load_sound("capture.wav")
 placementSound = load_sound("placement.mp3")
 
@@ -518,16 +527,6 @@ clock = pg.time.Clock()
 P1_sprites = pg.sprite.Group()  # Create a sprite group for P1
 P2_sprites = pg.sprite.Group()  # Create a sprite group for P2
 
-# Create and add sprites to the sprite groups
-for i in range(1,10):
-    P1Temp = load_image("P1_1.png")
-    P1_sprite = pieceSprite(P1Temp[0], P1Temp[1], 30, i*75, 1)
-    P1_sprites.add(P1_sprite)
-
-    P2Temp = load_image("P2_0.png")
-    P2_sprite = pieceSprite(P2Temp[0], P2Temp[1], 770, i*75, 1)
-    P2_sprites.add(P2_sprite)
-
 turn = [True, False] #Determines turn order
 activateMenu = True
 menuButton[1].center = (800/2, 770)
@@ -536,12 +535,25 @@ goodMove = True
 points = [0, 0]
 turnNum = 0
 settings = None #initialized in game loop
-
+once = True
 
 while True: #game loop
     if activateMenu:
         settings = menu()
+        once = True
         activateMenu = False
+
+    if once: #NEEDED TO ADD THIS HERE SO THAT SETTINGS CAN TAKE EFFECT
+        for i in range(1, settings[0]+1):
+            P1Temp = load_image("P1_sup.png")
+            P1_sprite = pieceSprite(P1Temp[0], P1Temp[1], 30, i*75, 1)
+            P1_sprites.add(P1_sprite)
+
+            P2Temp = load_image("P2_sup.png")
+            P2_sprite = pieceSprite(P2Temp[0], P2Temp[1], 770, i*75, 1)
+            P2_sprites.add(P2_sprite)
+
+        once = False
 
     for event in pg.event.get():
         if event.type == pg.QUIT:
