@@ -9,8 +9,8 @@ INCLUDE PICTURES OF THE PIECES AND EXPLAIN HOW THEY WORK
 
 ### Rules
 Controls required: 
--       Mouse
--       Computer capable of running python programs
+- Mouse
+- Computer capable of running python programs
 
 Conventionally, Nine Men Morris rules are as follows: 
 1_0.    Each player starts in an initial phase with nine marbles which they can place on the board at any unoccoupied position. 
@@ -30,9 +30,13 @@ The difference between Nine Men Morris and Nine Qubit Morris lies within how tur
 3_0.   After a set amount of points is reached, specified within the settings, the game will be over.
 
 ### Running the application
-In a terminal, type:
+After downloading the master branch, in a terminal, type:
 ```
 python3 NMMBoard.py
+```
+or 
+```
+python NMMBoard.py
 ```
 OR run the file in an IDE.
 
@@ -44,7 +48,7 @@ Click on rules to display the rules within the game.
 
 Clicking on play starts a game! Make sure to sit down with a friend and enjoy!
 
-### Bugs
+### DISCLAIMER
 The game is not in working order. The current issues are: 
 - inability to entangle
 - inability to check score
