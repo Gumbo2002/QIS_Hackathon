@@ -3,14 +3,10 @@
 #Clerical details:
 #Add more type hints
 #Add more comments breaking down the code
-from math import isqrt
-import math
 import pygame as pg
 import numpy as np
 import os
-import csv
-import typing
-from math import isqrt, floor
+from math import floor
 from piece import pieceSprite
 import Circuit_Builder as cb #used to simulate quantum circuit
 from qiskit import QuantumCircuit
