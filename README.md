@@ -1,62 +1,54 @@
-# QIS_Hackathon : Quantum Nine Men Morris
-
-Write how the game is supposed to work in here, as well as how to run the application. A good software project has good documentation.
-
-### TODO
-**NOTE: Claim a task before you do it by updating the readme**
-1. Fix sprite issue; only one sprite is initialized thus only displaying one piece.
-   '''
-   P1_sprites = pg.sprite.Group()
-   P2_sprites = pg.sprite.Group()
-   for i in range(9):
-       P1_sprites.add(pieceSprite(P1_1[0].convert(), P1_1[1], 30, i*75, 1))
-       P2_sprites.add(pieceSprite(P2_0[0].convert(), P2_0[1], 770, i*75, 0))
-   '''
-2. Fix drag and drop method for placing pieces on the board through one of three methods: scrap for different method (click on piece -> click on available space) or encode for snapping piece to unoccupied and legal spot on board (refer to checkMove method for relevant coordinates; look at rules section for legality based on phase of game) AND animating piece motion.
-   '''
-   #TODO: Finish block of code which handles the turns
-        if (event.type == pg.MOUSEBUTTONDOWN and turn[0]):
-            pos1 = pg.mouse.get_pos()
-
-            for i in P1_sprites.sprites():
-                if i.rect.collidepoint(pos1):
-                    movePiece = True
-                    while movePiece:
-                        for event in pg.event.get():
-                            i.rect.center = pg.mouse.get_pos()
-                            P1_sprites.draw(screen)
-                            if event.type == pg.MOUSEBUTTONUP:
-                                i.rect.center = pg.mouse.get_pos()
-                                movePiece = False
-                                turn = [False, True]
-
-
-        elif (event.type == pg.MOUSEBUTTONDOWN and turn[1]):
-            pos1 = pg.mouse.get_pos()
-
-            for j in P2_sprites.sprites():
-                if j.rect.collidepoint(pos1):
-                    movePiece = True
-                    while movePiece:
-                        for event in pg.event.get():
-                            j.rect.center = pg.mouse.get_pos()
-                            P2_sprites.draw(screen)
-                            if event.type == pg.MOUSEBUTTONUP:
-                                j.rect.center = pg.mouse.get_pos()
-                                movePiece = False
-                                turn = [True, False]
-   '''
-3. Integrate quantum program, **CircuitBuilder.py**, into the main program **NMMBoard.py**. This should be done in the following ways: upon the end of a turn, AFTER THE INITIAL PLACEMENT PHASE, all pieces for P1 or P2, depending on the turn, should be put into the |0> or |1> state. This is done with the **CircuitBuilder.py** program in a call from the **NMMBoard.py** program. the **CircuitBuilder.py** program then returns the *Classical Register* to the **NMMBoard.py** program with the indices of the array corresponding to pieces from either player. Thus, there are three objectives: find a way to, upon placement of a piece from P1 or P2, correlate that piece to a corresponding qubit FOR THE ENTIRE GAME **AND** Represent sprite visuals dynamically (switch between |0>, |1>, and Hadamard states depending on qubit state) **AND** implement CircuitBuilder.py in the game loop (bottom of NMMBoard.py file).
-   
-4. Encode for a mill or three pieces in a row. This involves not only detecting the mill but also handling for the player who scored to take an opponent's piece off of the board.
-   
-5. **MAKE GATE SPRITES AND THEIR FUNCTIONALITY WITH RESPECT TO CircuitBuilder.py**
+# QIS_Hackathon : Nine Qubit Morris
+Nine Qubit Morris is a pygame based application based on the classical game of Nine Men Morris. The differences lie in how the pieces are treated as quantum objects allowing for quantum phenomena to change how players score points. Additionally, other rules are made variable to allow for players to player longer or shorter games with different rules for manipulating the qubit pieces.
 
 ### Game board
- 
+![Game board](/data/canvas.png)
+
+### Pieces
+INCLUDE PICTURES OF THE PIECES AND EXPLAIN HOW THEY WORK
+
 ### Rules
+Controls required: 
+-       Mouse
+-       Computer capable of running python programs
+
+Conventionally, Nine Men Morris rules are as follows: 
+1_0.    Each player starts in an initial phase with nine marbles which they can place on the board at any unoccoupied position. 
+1_1.    During this phase, it is possible to **score** by placing three of your marbles in a row, known colloquially as a **MILL**.
+1_2.    A mill allows players to remove an opponents piece from the board. **THE GOAL** of the game is to remove enough pieces from the board until your opponent cannot form a **MILL**
+1_3.    This initial phase ends after all pieces are on the board.
+2_0.    The second phase consists of players moving marbles around the board to attempt to form more **MILLS**. Mills cannot be formed on the same row or column twice per player.
+3_0.    After enough points have been scored so as to leave the opponent unable to score a **MILL** or your opponent is unable to move a piece, you win!
+
+The difference between Nine Men Morris and Nine Qubit Morris lies within how turns are played out:
+1-1_3. Same rules, but **MILLS** must be formed from pieces that are both belonging to a player AND in the same spin state (1 or 0).
+1_4.   The game starts with each player having pieces either totally in the 1 or 0 state. There is also a superposition state that players cannot score off of.
+2_0.   Each turn has extra rules:
+2_1.   At the beginning of a turn, both players can remove pieces depending on whether the qubits collapsed favorably to form a **MILL**. 
+2_2.   Then, players are allowed to entangle any piece on the board. This will place those qubits into a bell state instantaneously thus collapsing them.
+2_3.   Upon the formation of a **MILL**, all qubits will be put into a superposition and the entanglements will be cleared from the board.
+3_0.   After a set amount of points is reached, specified within the settings, the game will be over.
 
 ### Running the application
+In a terminal, type:
 ```
-python3 NMMBoard.py ?
+python3 NMMBoard.py
 ```
+OR run the file in an IDE.
+
+This will open a menu with three options, "Play", "Rules", and "Settings". 
+
+Clicking on Settings allows you to adjust relevant parameters: pointsToWin, numPieces, and numEntangle. the first parameter controls the number of points needed to force a game win. The number of pieces allows players to play with 3-9 pieces depending on preference. the final parameter controls how many qubits can be entangled with the maximum number being 8. 
+
+Click on rules to display the rules within the game.
+
+Clicking on play starts a game! Make sure to sit down with a friend and enjoy!
+
+### Bugs
+The game is not in working order. The current issues are: 
+- inability to entangle
+- inability to check score
+- inability to move pieces around board POST-initial phase
+- inability to measure qubits and change states
+
+Project is still under development...
