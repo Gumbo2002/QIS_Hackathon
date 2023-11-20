@@ -6,9 +6,10 @@
 import pygame as pg
 import numpy as np
 import os
+import math
 from math import floor
 from piece import pieceSprite
-import Circuit_Builder as cb #used to simulate quantum circuit
+#import Circuit_Builder as cb #used to simulate quantum circuit
 from qiskit import QuantumCircuit
 from qiskit import transpile 
 from qiskit_aer import AerSimulator
@@ -315,7 +316,7 @@ def state_index(pos):
         for j in range(3):
             for k in range(3):
                 loc = [400+(3-i)*(100*(j-1)), 400+(3-i)*(100*(k-1))]
-                if(distance(pos, loc) < 50):
+                if(distance(pos, loc) < 150):
                     return (i,j,k) #(ring, col, row)
     return (-1,-1,-1)
 
@@ -332,35 +333,27 @@ def state_empty(rect):
     return (states[loc[0]][loc[1]][loc[2]] == 0)
 
 def measure():
-    #TODO: FIX
-    #Create a measurement across all the qubits
-    numPieces = settings["numPieces"]
-    if(numPieces*2 > 18): #Prevent memory overload
-        return 
-    meas = QuantumCircuit(numPieces*2, numPieces*2)
-    meas.barrier(range(numPieces))
-    meas.measure(range(numPieces), range(numPieces))
-    qc = meas.compose(circ, range(numPieces), front=True)
+    meas = QuantumCircuit(18, 18)
+    meas.barrier(range(18))
+    meas.measure(range(18), range(18))
+    qc = meas.compose(circ, range(18), front=True)
     backend = AerSimulator()
     qc_compiled = transpile(qc, backend)
     job_sim = backend.run(qc_compiled, shots=1024)
     result_sim = job_sim.result()
     counts = result_sim.get_counts(qc_compiled)
     #print(counts)
-    #Result contains the measured state of all the entangled qubits.
     result = max(counts, key=lambda key: counts[key])
     #print(result,qubit)
-    #This for loop goes through each qubit in the locations array, and updates the state
     for i in range(qubit):
-        #The result string is reverse, so it needs to be indexed backwards ex: 0000000000000101
-        if(result[numPieces-i]=="1"):
-            #Start by checking whether the "1" state belongs to red or blue
+        #print(result[-i])
+        if(result[17-i]=="1"):
             if(get_state(locations[i])>0):
-                set_state(locations[i],2)#Red up state is stored in state 3D array as 2
+                set_state(locations[i],2)
                 #print(locations[i])
                 #print(index_position(locations[i]))
                 #change to P1_1
-                for p1 in P1_sprites.sprites(): #Find's the sprite that needs to be changed and changes
+                for p1 in P1_sprites.sprites(): #Check for interactions with a piece FROM PLAYER 1
                     if p1.rect.collidepoint(index_position(locations[i])):
                         P1_sprites.remove(p1)
                         P1Temp = load_image("P1_1.png")
@@ -368,40 +361,40 @@ def measure():
                         P1_sprites.add(P1_sprite)
                         #print("update",locations[i])
             else:
-                set_state(locations[i],-2)#Blue up state is stored in state 3D array as -2
+                set_state(locations[i],-2)
                 #print(locations[i])
                 #print(index_position(locations[i]))
                 #change to P2_1
-                for p2 in P2_sprites.sprites(): #Find's the sprite that needs to be changed and changes
+                for p2 in P2_sprites.sprites(): #Check for interactions with a piece FROM PLAYER 1
                     if p2.rect.collidepoint(index_position(locations[i])):
                         P2_sprites.remove(p2)
                         P2Temp = load_image("P2_1.png")
-                        P2_sprite = pieceSprite(P2Temp[0], P2Temp[1], p2.rect.center[0], p2.rect.center[1], -3)
+                        P2_sprite = pieceSprite(P2Temp[0], P2Temp[1], p2.rect.center[0], p2.rect.center[1], 1)
                         P2_sprites.add(P2_sprite)
-                       # print("update",locations[i])
+                        #print("update",locations[i])
         else:
             if(get_state(locations[i])>0):
-                set_state(locations[i],1)#Red down state is stored in state 3D array as 1
+                set_state(locations[i],1)
                 #print(locations[i])
                 #print(index_position(locations[i]))
                 #change to P1_0
-                for p1 in P1_sprites.sprites(): #Find's the sprite that needs to be changed and changes
+                for p1 in P1_sprites.sprites(): #Check for interactions with a piece FROM PLAYER 1
                     if p1.rect.collidepoint(index_position(locations[i])):
                         P1_sprites.remove(p1)
                         P1Temp = load_image("P1_0.png")
-                        P1_sprite = pieceSprite(P1Temp[0], P1Temp[1], p1.rect.center[0], p1.rect.center[1], 2)
+                        P1_sprite = pieceSprite(P1Temp[0], P1Temp[1], p1.rect.center[0], p1.rect.center[1], 0)
                         P1_sprites.add(P1_sprite)
                         #print("update",locations[i])
             else:
-                set_state(locations[i],-1)#Blue up state is stored in state 3D array as -1
+                set_state(locations[i],-1)
                 #print(locations[i])
                 #print(index_position(locations[i]))
                 #change to P2_0
-                for p2 in P2_sprites.sprites(): #Find's the sprite that needs to be changed and changes
+                for p2 in P2_sprites.sprites(): #Check for interactions with a piece FROM PLAYER 1
                     if p2.rect.collidepoint(index_position(locations[i])):
                         P2_sprites.remove(p2)
                         P2Temp = load_image("P2_0.png")
-                        P2_sprite = pieceSprite(P2Temp[0], P2Temp[1], p2.rect.center[0], p2.rect.center[1], -4)
+                        P2_sprite = pieceSprite(P2Temp[0], P2Temp[1], p2.rect.center[0], p2.rect.center[1], 0)
                         P2_sprites.add(P2_sprite)
                         #print("update",locations[i])
                 
@@ -453,13 +446,13 @@ def handle_gate(pos1, pos2, entangleType = 0, done = False):
     return
 
 #The general rule for adding gates is alternating between H and CNOT's, no matter what color
-def add_gate(pos, turnNum):
+def add_gate(pos, parity):
     global qubit
     global temp
-    print(state_index(pos))
-    if(state_index(pos) not in locations):#First we check whether the selected qubit is already in the circuit
+    #print(state_index(pos))
+    tup = state_index(pos)
+    if(tup not in locations):#First we check whether the selected qubit is already in the circuit
         #print("New location")
-        tup = state_index(pos)
         locations.append(tup)
         if(abs(get_state(tup))==1):#Initialize down states opposite for red and blue
             circ.x(qubit)
@@ -467,7 +460,7 @@ def add_gate(pos, turnNum):
         if(get_state(tup)==0):#Apply H to 0 as a boundary condition
             circ.h(qubit)
             #print("hb",qubit)
-        if(turnNum%2==0):#Even selected qubits get H gate, and the qubit number is stored for the next CNOT
+        if(parity%2==0):#Even selected qubits get H gate, and the qubit number is stored for the next CNOT
             circ.h(qubit)
             #print("h",qubit)
             temp = qubit
@@ -478,7 +471,7 @@ def add_gate(pos, turnNum):
     else:#If the selected qubit was already in the circuit, this find's it's index and adds another gate
         for j in range(qubit):
             if(tup==locations[j]):
-                if(turnNum%2==0):
+                if(parity%2==0):
                     circ.h(j)
                     #print("h",j)
                     temp = j
@@ -626,7 +619,8 @@ turnBox = pg.Rect(350, 0, 200, 50)
 goodMove = True
 total_points = [0, 0]
 temp_points = [0, 0]
-turnNum = 1
+turnNum = 1     #Turn number will be separated from parity for the qubits
+parity = 0      #Parity tracks whether qubit gets H or CNOT
 settings = None #initialized in game loop (zero index = pointsToWin; first index = numPieces; second index = numEntangle)
 once = True
 
@@ -691,19 +685,38 @@ while True: #game loop
         #Handle Superpositions here (Turn action 2.1 of 3) >>> Should be done after every mill event
         
         #Handle entanglement (Turn action 2.2 of 3)
-        if(event.type == pg.MOUSEBUTTONDOWN and turnNum >= settings["numPieces"]*2+1): #TODO: change the condition to be dependent upon the number of pieces which is specified in the settings.
-            if(turn[0]):
-                drawText(screen, "Blue: click on two pieces to entangle them.", (247, 227, 176), turnBox, FONT)
-
-            elif(turn[1]):
-                drawText(screen, "Red: click on two pieces to entangle them.")
+        #if(event.type == pg.MOUSEBUTTONDOWN and turnNum >= settings["numPieces"]*2+1): #TODO: change the condition to be dependent upon the number of pieces which is specified in the settings.
+        #    if(turn[0]):
+        #        drawText(screen, "Blue: click on two pieces to entangle them.", (247, 227, 176), turnBox, FONT)
+        #
+        #    elif(turn[1]):
+        #        drawText(screen, "Red: click on two pieces to entangle them.")
                 
-            pos1, pos2 = handle_gate_helper([False, False], P_sprites)
+        #    pos1, pos2 = handle_gate_helper([False, False], P_sprites)
             #entanglement_type = choose_entanglement() #finish this later; default to |00>+|11>
-            handle_gate(pos1, pos2) #pos1, pos2 = position of qubits for entanglement > correlated with state array. 
+        #    handle_gate(pos1, pos2) #pos1, pos2 = position of qubits for entanglement > correlated with state array. 
                                     #entanglement_type = |00>+|11> or |10>+|01>
                                     #done = recursive variable
-                                
+
+        #This is left click to entangle, it finds the sprite that was pressed and adds the gate.
+        if(event.type == pg.MOUSEBUTTONDOWN and event.button == 3):
+            pos = pg.mouse.get_pos()
+            for p1 in P1_sprites.sprites():
+                if p1.rect.collidepoint(pos):
+                    add_gate(pos,parity)
+                    parity = parity + 1
+                    if(parity%2==0):
+                        measure()
+                    P1_sprites.draw(screen)
+                    check_win()
+            for p2 in P2_sprites.sprites():
+                if p2.rect.collidepoint(pos):
+                    add_gate(pos,parity)
+                    parity = parity + 1
+                    if(parity%2==0):
+                        measure()
+                    P2_sprites.draw(screen)
+                    check_win()                     
         '''Michael code (modified to draw all sprites and to check in a shared group to allow for entanglements between P1 and P2 pieces)
                             if p.rect.collidepoint(pos):
                                 add_gate(pos, turnNum) 
@@ -727,7 +740,7 @@ while True: #game loop
                                     tempCenter = pg.mouse.get_pos()
                                     if(canMove(tempCenter)):
                                         i.rect.center = matrixToCenter(rectToMatrix(tempCenter))
-                                        set_state(state_index(tempCenter), 2)                       #Sets the state value at state_index(tempCenter) index (2 always)
+                                        set_state(state_index(tempCenter), 1)                       #Sets the state value at state_index(tempCenter) index (2 always)
                                         P1_sprites.draw(screen)
                                         check_win()                                                 #Checks for mills
                                         movePiece = False                                           #End turn
@@ -765,7 +778,7 @@ while True: #game loop
                                     tempCenter = pg.mouse.get_pos()
                                     if(canMove(tempCenter)):
                                         j.rect.center = matrixToCenter(rectToMatrix(tempCenter))
-                                        set_state(state_index(tempCenter), 3)                 #Sets the state value at state_index(tempCenter) index (-3 always)
+                                        set_state(state_index(tempCenter), -2)                 #Sets the state value at state_index(tempCenter) index (-3 always)
                                         P2_sprites.draw(screen)
                                         check_win()
                                         movePiece = False
